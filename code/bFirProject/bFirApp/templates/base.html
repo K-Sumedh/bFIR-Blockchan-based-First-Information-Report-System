@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <head>
+        <meta charset="UTF-8">
+        <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.min.css'>
+      <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-social/5.1.1/bootstrap-social.min.css'>
+      <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css'>
+      {% load static %}
+      <link rel="stylesheet" href="../static/css/style.css">
+  </head>
+
+  </head>
+  <title>
+    {% block title %} 
+    {% endblock %}
+  </title>
+  <body>
+    {% load static %}
+      
+    <h1>bFIR: Blockchain based First Information Report System</h1>
+
+    <nav>
+      <ul class="menu">
+        <li><a href="{% url 'home' %}">Home</a></li>
+        <li><a href="#!">About</a></li>
+        {% if not auth %} <li><a href="{% url 'register' %}">Register</a></li> {% endif %}
+        {% if not auth %}<li><a href="{% url 'login' %}">Login</a></li> {% endif %}
+        {% if auth %} <li><a href="#!">View Status</a></li> {% endif %}
+        {% if auth %} <li><a href="#!">Register Complaint</a></li> {% endif %}
+        {% if auth %} <li><a href="{% url 'home' %}">Logout</a></li> {% endif %}
+      </ul>
+    </nav>
+
+    {% block content %}
+
+    {% endblock %}
+        
+  </body>
+</html>

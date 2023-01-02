@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+
+<p style="margin-left: 5em; margin-right: 5em; text-align: center;">India is experiencing a sharp rise in criminal activity. These activities are
+    frequently not reported. Even though there is an online platform for the po-
+    lice to store FIRs and NCRs, the majority of FIRs are still written by hand
+    as is the custom. The complainant must typically be present at the police sta-
+    tion to report a cognizable offence. In 2009, the Crime and Criminal Tracking
+    Network and Systems (CCTNS) for the entire nation was launched as an ef-
+    ficient e-governance system. It is, however, a centralised system for a specific
+    state.Therefore, a fully decentralised system is required to ensure that there
+    is no single point of failure and that complaints are handled safely and se-
+    curely to prevent unauthorised access. In this work our goal is to develop a
+    blockchain-based solution to manage complaints against both cognizable and
+    non-cognizable offences. Users, Police personnel will be authenticated for their
+    roles using AuthBlock, a blockchain based authentication framework which is
+    proposed in this work. The police’s FIR will be hashed, encrypted, and stored
+    in IPFS before being posted to the blockchain network. Geth is used to create
+    a local blockchain network.The complaint along with its timestamp is kept on
+    the blockchain network, so if the police refuse to file the FIR as a result of pres-
+    sure or claim they never received the complaint, the complainant will have good
+    evidence against them. The possibility of the FIR/NCR being tampered with
+    and being unreported would be eliminated by having all the entries saved in an
+    immutable database.
+</p>
+
+{% endblock%}
