@@ -36,7 +36,7 @@ contract Action
 
     mapping(string => complaintProgress[]) actionToComments;
 
-
+    
     //function to lodge an fir/NCR and save it to blockchain
     function TakeAction(bool _isFir, string memory _cid, uint _dateTime, string memory _comments, 
                         string memory _actionId, string memory _nameOfPolice, string memory _actionDocHash,

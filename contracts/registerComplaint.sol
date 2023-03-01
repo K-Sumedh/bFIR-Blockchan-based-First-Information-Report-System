@@ -15,24 +15,32 @@ contract registerComplaint{
         string  addres;
         string  description;
         string  complaintTitle;
+        string  complaintAgainst;
     }
 
-    uint256 noOfComplaints=0;  //cache for searching
+    uint256 noOfComplaints=0;  //cache  for searching
     complaint[] public comp; //array for list of complaints
     mapping(string => uint256) public idToComplaint;
 
     //UnSolvedStationIdToComplaints[] public unsolved;
     mapping(string => string[]) public stationToCompId;
+
+
+    function getId()
+    public view returns (uint256)
+    {
+        return noOfComplaints;
+    }
     
     function  addComplaint(string memory _id, string memory _docHash, string memory _Name,
                             string memory _date, string memory _time, string memory _state, 
                             string memory _district, string memory _stationId,
                             string memory _mobile, string memory _addres, 
-                            string memory _description, string memory _complaintTitle)
+                            string memory _description, string memory _complaintTitle, string memory _complaintAgainst)
     public
     {
-        comp.push(complaint(_id, _docHash, _Name, _date, _time, _state, _district, _stationId,
-                            _mobile, _addres, _description, _complaintTitle));
+        comp.push(complaint(_id, _docHash, _Name,_date, _time, _state, _district, _stationId,
+                            _mobile, _addres, _description, _complaintTitle, _complaintAgainst));
         
         idToComplaint[_id] = noOfComplaints;
         stationToCompId[_stationId].push(_id);

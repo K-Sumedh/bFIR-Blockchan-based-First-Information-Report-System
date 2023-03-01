@@ -23,5 +23,10 @@ urlpatterns = [
     path('', views.home, name='home'),
     path('Register/', views.Register, name='register'),
     path('Login/', views.Login, name="login"),
-     path ('<str:userid>/dashboard', views.dashboard, name='dashboard')
+    path ('<str:userid>/dashboard', views.dashboard, name='dashboard'),
+    path('registerComplaint', views.complaint, name='complaint'),
+    path('<str:userid>/<str:complaintId>/status', views.Status, name='status'),
+    path('PoliceLogin/', views.policeLogin, name="PoliceLogin"),
+    path ('<str:stationId>/Policedashboard', views.policeDashboard, name='policeDashboard'),
+
 ]

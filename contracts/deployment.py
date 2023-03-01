@@ -1,30 +1,39 @@
 import json #to save the output in a JSON file
-from solcx import compile_standard, install_solc
+from solcx import compile_standard, install_solc, compile_files
 from web3 import Web3
 
 install_solc('0.8.0')
 
+#fileName = "userRegistration.sol"
+#contractName = "userRegistration"
 
-with open("userRegistration.sol", "r") as file:
-    user_registration_file = file.read()
+fileName = "registerComplaint.sol"
+contractName = "registerComplaint"
+
+with open(fileName, "r") as file:
+    openedFile = file.read()
 
 
 #compile smart contract
-compiled_sol = compile_standard(
+compiled_sol = compile_standard( 
     {
         "language": "Solidity",
-        "sources": {"userRegistration.sol": {"content": user_registration_file}},
+        "sources": {fileName: {"content": openedFile}},
         "settings": {
             "outputSelection": {
                 "*": {
                     "*": ["abi", "metadata", "evm.bytecode", "evm.bytecode.sourceMap"] # output needed to interact with and deploy contract
                 }
+            },
+            "optimizer":{
+                "enabled" : True
             }
         },
     },
-    solc_version="0.8.0",
+    solc_version="0.8.0"
 )
-#print(compiled_sol)
+
+print(compiled_sol)
 
 
 with open("compiled_code.json", "w") as file:
@@ -32,9 +41,9 @@ with open("compiled_code.json", "w") as file:
 
 
 
-bytecode = compiled_sol["contracts"]["userRegistration.sol"]["userRegistration"]["evm"]["bytecode"]["object"]
+bytecode = compiled_sol["contracts"][fileName][contractName]["evm"]["bytecode"]["object"]
 # get abi
-abi = json.loads(compiled_sol["contracts"]["userRegistration.sol"]["userRegistration"]["metadata"])["output"]["abi"]
+abi = json.loads(compiled_sol["contracts"][fileName][contractName]["metadata"])["output"]["abi"]
 
 
 
@@ -71,11 +80,11 @@ transaction_hash = w3.eth.send_raw_transaction(sign_transaction.rawTransaction)
 print("Waiting for transaction to finish...")
 transaction_receipt = w3.eth.wait_for_transaction_receipt(transaction_hash)
 
-print(f"\nDone! Contract deployed to {transaction_receipt.contractAddress}")
+print(f"\nDone! Contract deployed to {transaction_receipt}")
 
 print("Saving contract details to file...")
 deployed_contract = {
-    "contractName" : "userRegistration",
+    "contractName" : contractName,
     "bytecode" : bytecode,
     "abi" : abi,
     "contractAddress" : transaction_receipt.contractAddress
@@ -94,6 +103,7 @@ with open("deployedContracts.json", 'r+') as file:
 print("Contract details saved to file!")
 
 
+#============================================================================#
 # nonce = nonce+1
 # regContract = w3.eth.contract(address=transaction_receipt.contractAddress, abi=abi)
 # print("regContract created")
