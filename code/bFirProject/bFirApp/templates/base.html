@@ -5,11 +5,13 @@
         <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.min.css'>
       <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/bootstrap-social/5.1.1/bootstrap-social.min.css'>
       <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css'>
+      <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
       {% load static %}
       <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+      {% block extrahead %} {% endblock %}
   </head>
 
-  </head>
   <title>
     {% block title %} 
     {% endblock %}
@@ -30,6 +32,7 @@
         {% if auth %} <li><a href="{% url 'home' %}">Logout</a></li> {% endif %}
         {% if not pAuth %}<li><a href="{% url 'PoliceLogin' %}">Police Login</a></li> {% endif %}
         {% if pAuth %} <li><a href="{% url 'home' %}">Logout</a></li> {% endif %}
+        {% if not auth and not pAuth %}<li><a href="{% url 'spDashboard' %}">SP Dashboard</a></li>{% endif %}
       </ul>
     </nav>
 

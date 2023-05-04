@@ -7,8 +7,11 @@ install_solc('0.8.0')
 #fileName = "userRegistration.sol"
 #contractName = "userRegistration"
 
-fileName = "registerComplaint.sol"
-contractName = "registerComplaint"
+# fileName = "registerComplaint.sol"
+# contractName = "registerComplaint"
+
+fileName = "spactions.sol"
+contractName = "SpActions"
 
 with open(fileName, "r") as file:
     openedFile = file.read()

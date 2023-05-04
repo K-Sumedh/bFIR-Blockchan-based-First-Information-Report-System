@@ -28,5 +28,7 @@ urlpatterns = [
     path('<str:userid>/<str:complaintId>/status', views.Status, name='status'),
     path('PoliceLogin/', views.policeLogin, name="PoliceLogin"),
     path ('<str:stationId>/Policedashboard', views.policeDashboard, name='policeDashboard'),
+    path('<str:complaintId>/takeAction', views.TakeAction, name='takeAction'),
+    path('SPDashboard', views.SPDashboard, name='spDashboard'),
 
 ]

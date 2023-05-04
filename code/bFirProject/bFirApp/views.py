@@ -11,11 +11,14 @@ import json
 from solcx import compile_standard, install_solc
 from web3 import Web3
 from eth_account import account
-
+from datetime import datetime as dt
+from pytz import timezone
 ################ GLOBALS ######################
 fileName = "../../contracts/deployedContracts.json"
 userRegContract = "userRegistration"
 ###############################################
+
+
 
 ################ VIEWS ########################
 
@@ -27,31 +30,197 @@ def policeLogin(request):
         stationId = request.POST['stationId']
         pwd = request.POST['pwd']
 
-        # file = open(fileName, 'r+')
-        # data = json.loads(file.read())
+        file = open(fileName, 'r+')
+        data = json.loads(file.read())
 
-        # for c in data["Depolyed_Contracts"]:
-        #     if c["contractName"] == "registerComplaint":
-        #         contract_data = c
+        for c in data["Depolyed_Contracts"]:
+            if c["contractName"] == "SpActions":
+                contract_data = c
 
-        # w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
+        w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
 
-        # nonce = w3.eth.getTransactionCount(contract_data["contractAddress"])
+        nonce = w3.eth.getTransactionCount(contract_data["contractAddress"])
 
-        # address = Web3.toChecksumAddress("0x39CDB6997F5DbD25CA9e8d51c122947313313a77")
-        # password = 'sumedh'
-        # private_key_str = "0xcb32e012bf974efdd4e9c51220d06c43c804646ce869c06f2eb0af5123dcf85f"
-        # addCompContract = w3.eth.contract(address=contract_data["contractAddress"], abi=contract_data["abi"])
+        address = Web3.toChecksumAddress("0x39CDB6997F5DbD25CA9e8d51c122947313313a77")
+        password = 'sumedh'
+        private_key_str = "0xcb32e012bf974efdd4e9c51220d06c43c804646ce869c06f2eb0af5123dcf85f"
+        SpActionContract = w3.eth.contract(address=contract_data["contractAddress"], abi=contract_data["abi"])
 
-        # nonce = w3.eth.getTransactionCount(address)
+        rec_pwd = SpActionContract.functions.stationIdToPassword(stationId).call()
+        if len(rec_pwd)  == 0:
+            print("Police station not found")
 
-        # messages.error(request, "Station ID or password is incorrect.")
+        print(f"Password for {stationId} is: {rec_pwd}")
+
+        if(pwd == rec_pwd):
+            redirect(policeDashboard, stationId)
+        else:
+            messages.error(request, "Police Station name or password incorrect")
+            return render(request, "policeLogin.html", {"msg": "Police Station name or password incorrect"})
+
         return redirect(policeDashboard, stationId)
 
+def TakeAction(request, complaintId):
+    
+    file = open(fileName, 'r+')
+    data = json.loads(file.read())
+
+    for c in data["Depolyed_Contracts"]:
+        if c["contractName"] == "registerComplaint":
+            contract_data = c
+
+    w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
+
+    nonce = w3.eth.getTransactionCount(contract_data["contractAddress"])
+
+    address = Web3.toChecksumAddress("0x39CDB6997F5DbD25CA9e8d51c122947313313a77")
+    password = 'sumedh'
+    private_key_str = "0xcb32e012bf974efdd4e9c51220d06c43c804646ce869c06f2eb0af5123dcf85f"
+    compDetails = w3.eth.contract(address=contract_data["contractAddress"], abi=contract_data["abi"])
+
+    nonce = w3.eth.getTransactionCount(address)
+
+    complaint = compDetails.functions.getComplaint(complaintId).call()
+    print(complaint)
+    content= []
+    content.append(complaint)
+
+
+    if(request.method == 'GET'):
+        for c in data["Depolyed_Contracts"]:
+            if c["contractName"] == "Action":
+                contract_data = c
+
+        w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
+
+        nonce = w3.eth.getTransactionCount(contract_data["contractAddress"])
+
+        address = Web3.toChecksumAddress("0x39CDB6997F5DbD25CA9e8d51c122947313313a77")
+        password = 'sumedh'
+        private_key_str = "0xcb32e012bf974efdd4e9c51220d06c43c804646ce869c06f2eb0af5123dcf85f"
+        compDetails = w3.eth.contract(address=contract_data["contractAddress"], abi=contract_data["abi"])
+
+        nonce = w3.eth.getTransactionCount(address)
+
+        complaint = compDetails.functions.getAllActions(complaintId).call()
+        if len(complaint) > 0:
+            progressStatus = complaint[-1][0][1]
+        else:
+            progressStatus = 0
+
+        return render(request, "takeAction.html", {"pAuth": True, "complaints": content, 'progressStatus': progressStatus})
+    
+    else:
+        Cstatus = request.POST['current_status']
+        comments = request.POST['updateComments']
+        stationId = request.POST['stationId']
+        print(type(Cstatus), comments, stationId)
+
+        #if Cstatus is 1 or 2 ie. fir lodge or ncr lodged then add it to blockchain 
+        # else add it as comments and progresss
+
+        ################### BLOCKCHAIN INTERACTION #################################
+        file = open(fileName, 'r+')
+        data = json.loads(file.read())
+
+        for c in data["Depolyed_Contracts"]:
+            if c["contractName"] == "Action":
+                contract_data = c
+
+        w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
+
+        nonce = w3.eth.getTransactionCount(contract_data["contractAddress"])
+
+        address = Web3.toChecksumAddress("0x39CDB6997F5DbD25CA9e8d51c122947313313a77")
+        private_key_str = "0xcb32e012bf974efdd4e9c51220d06c43c804646ce869c06f2eb0af5123dcf85f"
+        actionContract = w3.eth.contract(address=contract_data["contractAddress"], abi=contract_data["abi"])
+
+        nonce = w3.eth.getTransactionCount(address)
+
+        # dd/mm/YY H:M:S
+        date_time = dt.now(timezone("Asia/Kolkata"))
+        date_time = date_time.strftime("%d/%m/%Y %H:%M:%S")
+        print(Cstatus, complaint[0], complaint[3],complaint[10], complaint[7], complaint[1],
+                                                                int(Cstatus))
+        if Cstatus == "1" or Cstatus == "2":
+            updateAction = actionContract.functions.TakeAction(Cstatus, complaint[0], date_time,
+                                                                comments, stationId, "xxxx",
+                                                                int(Cstatus)
+                                                                ).buildTransaction(
+                                                                    {
+                                                                        "chainId": 9876, 
+                                                                        "from": address, 
+                                                                        "gasPrice": w3.eth.gas_price, 
+                                                                        "nonce": nonce
+                                                                    }
+                                                                )
+        else:
+            updateAction = actionContract.functions.UpdateProgress(complaint[0], comments, int(Cstatus), date_time
+                                                                   ).buildTransaction(
+                                                                    {
+                                                                        "chainId": 9876, 
+                                                                        "from": address, 
+                                                                        "gasPrice": w3.eth.gas_price, 
+                                                                        "nonce": nonce
+                                                                    }
+                                                                )
+
+
+        # Sign the transaction
+        sign_updateAction = w3.eth.account.sign_transaction(updateAction, private_key=private_key_str)
+
+        # Send the transaction
+        send_store_user= w3.eth.send_raw_transaction(sign_updateAction.rawTransaction)
+        print("Transaction to take actions sent on blockchain!!!")
+
+        transaction_receipt = w3.eth.wait_for_transaction_receipt(send_store_user)
+        print(transaction_receipt)
+        print("Action on complaint added on blockchain and updated the comments and progress!!!")
+        ############################################################################
+            
+
+        return redirect(policeDashboard, stationId)
 
 def policeDashboard(request, stationId):
-    
-    return render(request, "policeDashboard.html", {"pAuth": True})
+
+    ############### Blockchain Interaction #################
+    if(request.method == 'GET'):
+            file = open(fileName, 'r+')
+            data = json.loads(file.read())
+
+            for c in data["Depolyed_Contracts"]:
+                if c["contractName"] == "registerComplaint":
+                    contract_data = c
+
+            w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
+
+            nonce = w3.eth.getTransactionCount(contract_data["contractAddress"])
+
+            address = Web3.toChecksumAddress("0x39CDB6997F5DbD25CA9e8d51c122947313313a77")
+            password = 'sumedh'
+            private_key_str = "0xcb32e012bf974efdd4e9c51220d06c43c804646ce869c06f2eb0af5123dcf85f"
+            addCompContract = w3.eth.contract(address=contract_data["contractAddress"], abi=contract_data["abi"])
+
+            nonce = w3.eth.getTransactionCount(address)
+
+            complaints = addCompContract.functions.getComplaintIdsForPolice(stationId).call()
+            countOfComplaints = int(len(complaints))
+            
+            content = []
+            #getting the complaint details
+            for i in range (0, countOfComplaints):
+                compDetails = addCompContract.functions.getComplaint(complaints[i]).call()
+                #print(compDetails)
+                content.append(compDetails)
+
+            #####################################################################
+
+            return render(request, "policeDashboard.html", {"pAuth": True, "complaints": content})
+    else:
+        if 'complaintId_Status' in request.POST:
+            return redirect(Status, stationId, request.POST['complaintId_Status'])
+        if 'complaintId_TakeAction' in request.POST:
+            return redirect(TakeAction, request.POST['complaintId_TakeAction'])
 
 def complaint(request):
     if request.method == 'POST':
@@ -67,7 +236,7 @@ def complaint(request):
         Title = request.POST['Title']
         desc = request.POST['desc']
 
-        ############### Blockchain Interaction #################
+        #################### Blockchain Interaction ########################
         file = open(fileName, 'r+')
         data = json.loads(file.read())
 
@@ -115,6 +284,54 @@ def complaint(request):
         print(transaction_receipt)
         print("Complaint Registered on blockchain!!!")
 
+        ######### ALSO ADD IT TO ACTION SMART CONTRACT #####################
+        file = open(fileName, 'r+')
+        data = json.loads(file.read())
+
+        for c in data["Depolyed_Contracts"]:
+            if c["contractName"] == "Action":
+                contract_data = c
+
+        w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
+
+        nonce = w3.eth.getTransactionCount(contract_data["contractAddress"])
+
+        address = Web3.toChecksumAddress("0x39CDB6997F5DbD25CA9e8d51c122947313313a77")
+        private_key_str = "0xcb32e012bf974efdd4e9c51220d06c43c804646ce869c06f2eb0af5123dcf85f"
+        actionContract = w3.eth.contract(address=contract_data["contractAddress"], abi=contract_data["abi"])
+
+        nonce = w3.eth.getTransactionCount(address)
+
+        # dd/mm/YY H:M:S
+        date_time = dt.now(timezone("Asia/Kolkata"))
+        #date_time = str(date_time)
+        date_time = date_time.strftime("%d/%m/%Y %H:%M:%S")
+        
+        updateAction = actionContract.functions.UpdateProgress(str(id),
+                                                            "Complaint registered. Waiting for action from police station.",
+                                                            0,
+                                                            date_time
+                                                            ).buildTransaction(
+            {
+                "chainId": 9876, 
+                "from": address, 
+                "gasPrice": w3.eth.gas_price, 
+                "nonce": nonce
+            }
+        )
+
+        # Sign the transaction
+        sign_updateAction = w3.eth.account.sign_transaction(updateAction, private_key=private_key_str)
+
+        # Send the transaction
+        send_store_user= w3.eth.send_raw_transaction(sign_updateAction.rawTransaction)
+        print("Transaction to add complaint in action smart contract to update progress sent on blockchain!!!")
+
+        transaction_receipt = w3.eth.wait_for_transaction_receipt(send_store_user)
+        print(transaction_receipt)
+        print("Complaint Registered on blockchain and updated the comments and progress!!!")
+
+        #####################################################################
 
         #####################################################################
         return render(request, 'complaint.html', {"auth": True})
@@ -145,16 +362,37 @@ def Status(request, userid, complaintId):
 
         nonce = w3.eth.getTransactionCount(address)
 
-        complaints = addCompContract.functions.getComplaintsForComplainant(userid).call()
-        countOfComplaints = complaints[1]
-        content = []
-        for i in range (0, countOfComplaints):
-            if complaints[0][i][0] == complaintId:
-                content.append(complaints[0][i])
-                break
+        complaint = addCompContract.functions.getComplaint(complaintId).call()
+        content= []
+        content.append(complaint)
         #####################################################################
 
-    return render(request, "status.html", {"auth": True, 'content':content})
+        ########## GET UPDATES FROM ACTION SMART CONTRACT #####################
+        file = open(fileName, 'r+')
+        data = json.loads(file.read())
+
+        for c in data["Depolyed_Contracts"]:
+            if c["contractName"] == "Action":
+                contract_data = c
+
+        w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
+
+        nonce = w3.eth.getTransactionCount(contract_data["contractAddress"])
+
+        address = Web3.toChecksumAddress("0x39CDB6997F5DbD25CA9e8d51c122947313313a77")
+        private_key_str = "0xcb32e012bf974efdd4e9c51220d06c43c804646ce869c06f2eb0af5123dcf85f"
+        actionContract = w3.eth.contract(address=contract_data["contractAddress"], abi=contract_data["abi"])
+
+        actionContent = actionContract.functions.getAllActions(complaintId).call()
+        print(actionContent)
+
+        if len(actionContent) > 0:
+            progressStatus = actionContent[-1][0][1]
+        else:
+            progressStatus = 0
+
+    return render(request, "status.html", 
+                  {"auth": True, 'content':content, 'actionContent':actionContent, 'progressStatus': progressStatus})
 
 def dashboard(request, userid):
 
@@ -234,6 +472,12 @@ def Login(request):
         print("GET Login Form.")
         return render(request, "login.html", {"auth": False})
 
+
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_protect
+@csrf_protect
+@csrf_exempt
+
 def Register(request):
     if request.method == 'POST':
         print("POST Request for Register  form.")
@@ -307,3 +551,165 @@ def Register(request):
         print("Get Request for Register  form.")
         return render(request, "register.html", {"auth": False})
 
+
+
+# from django.views.decorators.csrf import csrf_exempt
+# from django.views.decorators.csrf import csrf_protect
+# @csrf_protect
+# @csrf_exempt
+
+def SPDashboard(request):
+    if request.method == "GET":
+        ############### Blockchain Interaction #################
+        file = open(fileName, 'r+')
+        data = json.loads(file.read())
+
+        for c in data["Depolyed_Contracts"]:
+            if c["contractName"] == "Action":
+                contract_data = c
+
+        w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
+
+        nonce = w3.eth.getTransactionCount(contract_data["contractAddress"])
+
+        address = Web3.toChecksumAddress("0x39CDB6997F5DbD25CA9e8d51c122947313313a77")
+        password = 'sumedh'
+        private_key_str = "0xcb32e012bf974efdd4e9c51220d06c43c804646ce869c06f2eb0af5123dcf85f"
+        addCompContract = w3.eth.contract(address=contract_data["contractAddress"], abi=contract_data["abi"])
+
+        nonce = w3.eth.getTransactionCount(address)
+
+        counts = addCompContract.functions.getGeneralStatusCounts().call()
+        msg = msg = "Police station : All"
+        #####################################################################
+
+        return render(request, "SPDashboard.html", {"auth": False, "pAuth": True, "counts":counts, "msg":msg})
+    
+    # 
+    else:
+        #dashboard counts for police station
+        if request.POST['work'] == "counts":
+            stationId = request.POST['searchStationId']
+            file = open(fileName, 'r+')
+            data = json.loads(file.read())
+
+            for c in data["Depolyed_Contracts"]:
+                if c["contractName"] == "registerComplaint":
+                    contract_data = c
+
+            w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
+
+            nonce = w3.eth.getTransactionCount(contract_data["contractAddress"])
+
+            address = Web3.toChecksumAddress("0x39CDB6997F5DbD25CA9e8d51c122947313313a77")
+            password = 'sumedh'
+            private_key_str = "0xcb32e012bf974efdd4e9c51220d06c43c804646ce869c06f2eb0af5123dcf85f"
+            addCompContract = w3.eth.contract(address=contract_data["contractAddress"], abi=contract_data["abi"])
+
+            nonce = w3.eth.getTransactionCount(address)
+
+            cIDs = addCompContract.functions.getComplaintIdsForPolice(stationId).call()
+            print(type(cIDs))
+
+            #FOR ABOVE CIDS LIST. GET STATUS FOR IT.#
+            file = open(fileName, 'r+')
+            data = json.loads(file.read())
+
+            for c in data["Depolyed_Contracts"]:
+                if c["contractName"] == "Action":
+                    contract_data = c
+
+            w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
+
+            nonce = w3.eth.getTransactionCount(contract_data["contractAddress"])
+
+            address = Web3.toChecksumAddress("0x39CDB6997F5DbD25CA9e8d51c122947313313a77")
+            password = 'sumedh'
+            private_key_str = "0xcb32e012bf974efdd4e9c51220d06c43c804646ce869c06f2eb0af5123dcf85f"
+            actionContract = w3.eth.contract(address=contract_data["contractAddress"], abi=contract_data["abi"])
+
+            # nonce = w3.eth.getTransactionCount(address)
+
+            if len(cIDs) == 0:
+                counts = []
+                msg = "Police station : All"
+            else:
+                counts = actionContract.functions.getStatusCountForStationId(cIDs).call()
+                print(counts)
+                msg = "Police station : "+stationId
+
+            ########## Get Police Station Details ################
+            file = open(fileName, 'r+')
+            data = json.loads(file.read())
+
+            for c in data["Depolyed_Contracts"]:
+                if c["contractName"] == "SpActions":
+                    contract_data = c
+
+            w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
+
+            nonce = w3.eth.getTransactionCount(contract_data["contractAddress"])
+
+            address = Web3.toChecksumAddress("0x39CDB6997F5DbD25CA9e8d51c122947313313a77")
+            password = 'sumedh'
+            private_key_str = "0xcb32e012bf974efdd4e9c51220d06c43c804646ce869c06f2eb0af5123dcf85f"
+            actionContract = w3.eth.contract(address=contract_data["contractAddress"], abi=contract_data["abi"])
+
+            psDetails = actionContract.functions.getPoliceStationDetails(stationId).call()
+            print("---",type(psDetails[0]))
+            ######################################################
+            return render(request, "SPDashboard.html", {"auth": False, "pAuth": True, "counts":counts, "msg":msg, "psDetails":psDetails})
+        
+        #add police station form
+        else:
+            psname = request.POST["psName"]
+            psaddress = request.POST["address"]
+            psofficer = request.POST["Officer"]
+            pspwd = request.POST["password"]
+
+            ############### Blockchain Interaction #################
+        file = open(fileName, 'r+')
+        data = json.loads(file.read())
+
+        for c in data["Depolyed_Contracts"]:
+            if c["contractName"] == "SpActions":
+                contract_data = c
+
+        w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
+
+        # nonce = w3.eth.getTransactionCount(contract_data["contractAddress"])
+
+        address = Web3.toChecksumAddress("0x39CDB6997F5DbD25CA9e8d51c122947313313a77")
+        private_key_str = "0xcb32e012bf974efdd4e9c51220d06c43c804646ce869c06f2eb0af5123dcf85f"
+        spActions = w3.eth.contract(address=contract_data["contractAddress"], abi=contract_data["abi"])
+
+        nonce = w3.eth.getTransactionCount(address)
+
+        
+        addPoliceStation= spActions.functions.AddPoliceStation(
+                                                            psname,
+                                                            psaddress,
+                                                            psofficer,
+                                                            pspwd
+                                                    ).buildTransaction(
+                                                        {
+                                                            "chainId": 9876, 
+                                                            "from": address, 
+                                                            "gasPrice": w3.eth.gas_price, 
+                                                            "nonce": nonce
+                                                        }
+                                                    )
+
+        # Sign the transaction
+        sign_userDetails = w3.eth.account.sign_transaction(addPoliceStation, private_key=private_key_str)
+
+        # Send the transaction
+        send_store_user= w3.eth.send_raw_transaction(sign_userDetails.rawTransaction)
+        print("Transaction to add Police Station sent on blockchain!!!")
+
+        transaction_receipt = w3.eth.wait_for_transaction_receipt(send_store_user)
+        print(transaction_receipt)
+        print("Police Station on blockchain!!!")
+        ########################################################
+
+        return render(request, "SPDashboard.html", {"auth": False, "pAuth": True})

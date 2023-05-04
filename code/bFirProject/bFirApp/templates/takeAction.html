@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Update Complaint Status{% endblock %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+
+{% block content %}
+
+<h1>Update Complaint Status</h1>
+
+{% for data in complaints %}
+<div id="box1">
+    <div style="margin-right: 5em; margin-left: 5em; "> 
+        <div class="card bg-secondary text-white" style="border-radius: 2em;">
+            <div class="card-body" style="background-color:#232933;border-radius: 2em;">
+                <div class="dash-card-header">
+                    <h2><br>{{data.0}}</h2>
+                    <p>Complaint ID</p>
+                </div><br>
+                <div class="dash-card-header">
+                    <h2><br>{{data.2}}</h2>
+                    <p>Name</p>
+                </div><br>
+                <div style="margin-left:15em;margin-top: -16em;">
+                    <b style="font-size:20px;">Date :</b> <em>{{data.3}}</em> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <b style="font-size:20px;">Time :</b> <em>{{data.4}}</em> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <b style="font-size:20px;">Mobile Number :</b> <em>{{data.8}}</em><br><br>
+                    <b style="font-size:20px;">Address of Incident :</b> <em>{{data.9}}</em>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <b style="font-size:20px;">District :</b> <em>{{data.6}}</em>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <b style="font-size:20px;">State :</b> <em>{{data.5}}</em>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <b style="font-size:20px;">Police Station :</b> <em>{{data.7}}</em>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <br><br>
+                    <b style="font-size:20px;">Complaint Title :</b> <em>{{data.11}}</em>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <b style="font-size:20px;">Document Hash :</b> <em>{{data.1}}</em>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br><br>
+                    <b style="font-size:20px;">Description:</b> <em>{{data.10}}</em>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    <br><br><br><br>
+                    <form class="my-form" method="POST">
+                        {% csrf_token %}
+                        <div class="container">
+                            <ul>
+                                <li> 
+                                <div class="grid grid-2" >
+                                    <label style="margin-left: -17em;padding-top: 1em;"><b style="font-size:20px;">Update status :</b></label>
+                                    <select name="current_status" style="margin-left: -28em;"> Update Status
+                                    {% if progressStatus == 0 %}<option selected  value=0>COMPLAIN_REGISTERED</option>{% endif %}
+                                    {% if progressStatus == 0 %}<option value=1>FIR_LODGED</option>{% endif %}
+                                    {% if progressStatus == 0 %} <option value=2>NCR_LODGED</option>     {% endif %}
+                                    {% if progressStatus >= 2 %}<option value=3>UNDER_INVESTIGATION</option>{% endif %}
+                                    {% if progressStatus == 3 %}<option value=4>SOLVED</option>{% endif %}
+                                    </select>
+                                </div></li>
+                                <br>
+                                <input type="hidden" value={{data.0}} name="complaintId_Status">
+                                <input type="hidden" value={{data.7}} name="stationId">
+                                <li>
+                                    <label style="margin-left: -17em;"><b style="font-size:20px;">Add Update <br>Comments:</b> </label>
+                                </li>
+                                <li><textarea  style="margin-left: -6.60em; margin-top: -5em;" name="updateComments" rows="4" cols="40" placeholder="Update Comments"></textarea></li>
+                            </ul>
+                                <button style="background-color: DodgerBlue;width:15em;height:4em;margin-left: 8em;
+                                    border: none;
+                                    color: white;
+                                    padding: 14px 20px;
+                                    font-size: 16px;
+                                    cursor: pointer; border-radius: 2em;" type="submit"> Update Status
+                                    <i class="fa fa-arrow-right"></i>
+                                </button>
+                        </div> 
+                    </form>
+                    <br><br>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 
+<br><br>
+{% endfor %}
+{% endblock %}

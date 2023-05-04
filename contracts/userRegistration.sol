@@ -30,8 +30,8 @@ contract userRegistration {
                      string memory _phoneNumber, string memory _password, string memory _addresss) 
     public
     {
-        users.push(User(_id, _name, _adhaarId,_phoneNumber, _password, _addresss)); //append to  Contact[] array
-        nameToPassword[_name] = _password; //use name to get phone number
+        users.push(User(_id, _name, _adhaarId,_phoneNumber, _password, _addresss)); 
+        nameToPassword[_name] = _password; 
         userIdToPassword[_id] = _password;
     }
 
