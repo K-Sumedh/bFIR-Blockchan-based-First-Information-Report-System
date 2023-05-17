@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse
 from .models import *
 from .forms import *
 from django.contrib.auth import authenticate, login, logout
@@ -9,13 +9,21 @@ from django.contrib.auth.decorators import login_required
 ###############################################
 import json
 from solcx import compile_standard, install_solc
-from web3 import Web3
-from eth_account import account
+from web3 import Web3, eth
+from eth_account import Account
 from datetime import datetime as dt
 from pytz import timezone
+from .helper import TopUp
+import secrets
+import ipfshttpclient
+import io
 ################ GLOBALS ######################
 fileName = "../../contracts/deployedContracts.json"
 userRegContract = "userRegistration"
+
+GLOBAL_ETH_ADD = "0x39CDB6997F5DbD25CA9e8d51c122947313313a77"
+GLOBAL_ETH_KEY = "0xcb32e012bf974efdd4e9c51220d06c43c804646ce869c06f2eb0af5123dcf85f"
+GLOBAL_IPFS_URL = "/ip4/127.0.0.1/tcp/5001/http"
 ###############################################
 
 
@@ -217,6 +225,8 @@ def policeDashboard(request, stationId):
 
             return render(request, "policeDashboard.html", {"pAuth": True, "complaints": content})
     else:
+        # if 'SEARCH_COMPLAINT' in request.POST:
+        #     # get complaint detials for only that id
         if 'complaintId_Status' in request.POST:
             return redirect(Status, stationId, request.POST['complaintId_Status'])
         if 'complaintId_TakeAction' in request.POST:
@@ -235,7 +245,12 @@ def complaint(request):
         policeStation = request.POST['policeStation']
         Title = request.POST['Title']
         desc = request.POST['desc']
+        file = request.FILES['file']
 
+        ipfsClient  = ipfshttpclient.connect(GLOBAL_IPFS_URL)
+        res = ipfsClient.add(file)
+        print(res['Hash'])
+        dochash = res['Hash']
         #################### Blockchain Interaction ########################
         file = open(fileName, 'r+')
         data = json.loads(file.read())
@@ -257,7 +272,6 @@ def complaint(request):
 
 
         id = addCompContract.functions.getId().call()
-        dochash = "xxxxx"
         date = datetime[:10]
         time = datetime[11:]
 
@@ -341,32 +355,40 @@ def complaint(request):
 def home(request):
     return render(request, "index.html", {"auth": False})
 
+
 def Status(request, userid, complaintId):
+    file = open(fileName, 'r+')
+    data = json.loads(file.read())
+
+    for c in data["Depolyed_Contracts"]:
+        if c["contractName"] == "registerComplaint":
+            contract_data = c
+
+    w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
+
+    nonce = w3.eth.getTransactionCount(contract_data["contractAddress"])
+
+    address = Web3.toChecksumAddress("0x39CDB6997F5DbD25CA9e8d51c122947313313a77")
+    password = 'sumedh'
+    private_key_str = "0xcb32e012bf974efdd4e9c51220d06c43c804646ce869c06f2eb0af5123dcf85f"
+    addCompContract = w3.eth.contract(address=contract_data["contractAddress"], abi=contract_data["abi"])
+
+    nonce = w3.eth.getTransactionCount(address)
+
+    complaint = addCompContract.functions.getComplaint(complaintId).call()
+    content= []
+    content.append(complaint)
+
+    if request.method == 'POST':
+        ipfs = ipfshttpclient.connect(GLOBAL_IPFS_URL)
+        file = ipfs.cat(complaint[1])
+        buffer = io.BytesIO(file)
+        buffer.seek(0)
+        response = FileResponse(buffer, as_attachment=True, filename=complaintId)    
+        return response
+    
     ############### Blockchain Interaction #################
     if(request.method == 'GET'):
-        file = open(fileName, 'r+')
-        data = json.loads(file.read())
-
-        for c in data["Depolyed_Contracts"]:
-            if c["contractName"] == "registerComplaint":
-                contract_data = c
- 
-        w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
-
-        nonce = w3.eth.getTransactionCount(contract_data["contractAddress"])
-
-        address = Web3.toChecksumAddress("0x39CDB6997F5DbD25CA9e8d51c122947313313a77")
-        password = 'sumedh'
-        private_key_str = "0xcb32e012bf974efdd4e9c51220d06c43c804646ce869c06f2eb0af5123dcf85f"
-        addCompContract = w3.eth.contract(address=contract_data["contractAddress"], abi=contract_data["abi"])
-
-        nonce = w3.eth.getTransactionCount(address)
-
-        complaint = addCompContract.functions.getComplaint(complaintId).call()
-        content= []
-        content.append(complaint)
-        #####################################################################
-
         ########## GET UPDATES FROM ACTION SMART CONTRACT #####################
         file = open(fileName, 'r+')
         data = json.loads(file.read())
@@ -391,8 +413,9 @@ def Status(request, userid, complaintId):
         else:
             progressStatus = 0
 
+
     return render(request, "status.html", 
-                  {"auth": True, 'content':content, 'actionContent':actionContent, 'progressStatus': progressStatus})
+                  {"auth": True, 'content':content, 'actionContent':actionContent, 'progressStatus': progressStatus, 'file':file})
 
 def dashboard(request, userid):
 
@@ -436,47 +459,78 @@ def Login(request):
         userid = request.POST['userid']
         pwd = request.POST['pwd']
 
-        ########################### Blockchain Interaction ###############################
+        # passPhrase = userid+pwd
+        # passPhraseHash = Web3.keccak(text=passPhrase)
+        ##*****************************************#
         file = open(fileName, 'r+')
         data = json.loads(file.read())
 
         for c in data["Depolyed_Contracts"]:
-            if c["contractName"] == userRegContract:
+            if c["contractName"] == "newUserRegistration":
                 contract_data = c
-                break
 
         w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
 
         nonce = w3.eth.getTransactionCount(contract_data["contractAddress"])
-        #print(contract_data)
-        address = Web3.toChecksumAddress("0x39CDB6997F5DbD25CA9e8d51c122947313313a77")
-        password = 'sumedh'
-        private_key_str = "0xcb32e012bf974efdd4e9c51220d06c43c804646ce869c06f2eb0af5123dcf85f"
         regContract = w3.eth.contract(address=contract_data["contractAddress"], abi=contract_data["abi"])
-        print(regContract)
-        nonce = w3.eth.getTransactionCount(address)
 
-        rec_pwd = regContract.functions.nameToPassword(userid).call()
-        if len(rec_pwd)  == 0:
-            print("User not found")
-        print(f"Password for {userid} is: {rec_pwd}")
-        ########################### Blockchain Interaction END ###############################
+        userAddress = regContract.functions.getUserAddress(userid).call()
 
-        if(pwd == rec_pwd):
+        orgSigHash = regContract.functions.getSignatureHash().call({'from': userAddress})
+        print("orgSigHash:", orgSigHash)
+
+        phrase = userid+pwd+userAddress
+        phraseHash = Web3.keccak(text=phrase)
+        print("phraseHash:", phraseHash.hex())
+
+        if(orgSigHash == phraseHash.hex()):
             return redirect(dashboard, userid)
         else:
-            messages.error(request, "Email or password is incorrect.")
+            # messages.error(request, "Email or password is incorrect.")
             return render(request, "login.html", {"msg": "Email or password is incorrect."})
+
+        ##*****************************************#
+        # ########################### Blockchain Interaction ###############################
+        # file = open(fileName, 'r+')
+        # data = json.loads(file.read())
+
+        # for c in data["Depolyed_Contracts"]:
+        #     if c["contractName"] == userRegContract:
+        #         contract_data = c
+        #         break
+
+        # w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
+
+        # nonce = w3.eth.getTransactionCount(contract_data["contractAddress"])
+        # #print(contract_data)
+        # address = Web3.toChecksumAddress("0x39CDB6997F5DbD25CA9e8d51c122947313313a77")
+        # password = 'sumedh'
+        # private_key_str = "0xcb32e012bf974efdd4e9c51220d06c43c804646ce869c06f2eb0af5123dcf85f"
+        # regContract = w3.eth.contract(address=contract_data["contractAddress"], abi=contract_data["abi"])
+        # print(regContract)
+        # nonce = w3.eth.getTransactionCount(address)
+
+        # rec_pwd = regContract.functions.nameToPassword(userid).call()
+        # if len(rec_pwd)  == 0:
+        #     print("User not found")
+        # print(f"Password for {userid} is: {rec_pwd}")
+        # ########################### Blockchain Interaction END ###############################
+
+        # if(pwd == rec_pwd):
+        #     return redirect(dashboard, userid)
+        # else:
+        #     messages.error(request, "Email or password is incorrect.")
+        #     return render(request, "login.html", {"msg": "Email or password is incorrect."})
 
     else:
         print("GET Login Form.")
         return render(request, "login.html", {"auth": False})
 
 
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.csrf import csrf_protect
-@csrf_protect
-@csrf_exempt
+# from django.views.decorators.csrf import csrf_exempt
+# from django.views.decorators.csrf import csrf_protect
+# @csrf_protect
+# @csrf_exempt
 
 def Register(request):
     if request.method == 'POST':
@@ -498,44 +552,50 @@ def Register(request):
         }
 
         print(content)
-        ############### Blockchain Interaction #################
+        #******************************************************#
+        w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
+
+        priv = secrets.token_hex(32)
+        private_key = "0x" + priv
+
+        ethAccount = Account.privateKeyToAccount(private_key)
+        ethAddress = ethAccount.address
+        print ("SAVE BUT DO NOT SHARE THIS:", ethAccount.privateKey)
+        print(ethAddress)
+
+        
+        # ethAddress = w3.geth.personal.new_account(pwd)
+        TopUp(GLOBAL_ETH_ADD, ethAddress)
+        #sign the passphrase+ethaddress and then hash it to save
+        # signedData = Account.sign_message(name+pwd+ethAddress, private_key=private_key)
+        # signedData = w3.geth.personal.sign(name+pwd+ethAddress, ethAddress, pwd)
+
+        phraseHash = Web3.keccak(text=name+pwd+ethAddress)
+
         file = open(fileName, 'r+')
         data = json.loads(file.read())
 
         for c in data["Depolyed_Contracts"]:
-            if c["contractName"] == userRegContract:
+            if c["contractName"] == "newUserRegistration":
                 contract_data = c
 
-        w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
-
-        nonce = w3.eth.getTransactionCount(contract_data["contractAddress"])
-
-        address = Web3.toChecksumAddress("0x39CDB6997F5DbD25CA9e8d51c122947313313a77")
-        password = 'sumedh'
-        private_key_str = "0xcb32e012bf974efdd4e9c51220d06c43c804646ce869c06f2eb0af5123dcf85f"
         regContract = w3.eth.contract(address=contract_data["contractAddress"], abi=contract_data["abi"])
+        nonce = w3.eth.getTransactionCount(ethAddress)
 
-        nonce = w3.eth.getTransactionCount(address)
-
-        userId = name[0:5] + phone[-5:]
-        #check
-        rec_pwd = regContract.functions.nameToPassword(name).call()
-        if not len(rec_pwd)  == 0:
-            print("User already exisists")
-            return render(request, "register.html", {"msg": "Username already taken. Please enter other username."})
-
-        #
-        userDetails= regContract.functions.addUser(userId, name, adhaarId, phone, pwd, addresss).buildTransaction(
-            {
-                "chainId": 9876, 
-                "from": address, 
-                "gasPrice": w3.eth.gas_price, 
-                "nonce": nonce
-            }
-        )
+        
+        userDetails= regContract.functions.addUser(str(nonce), name, adhaarId, phone, pwd, addresss,
+                                                phraseHash.hex()).buildTransaction(
+                                                    {
+                                                        "chainId": 9876, 
+                                                        "from": ethAddress, 
+                                                        "gasPrice": w3.eth.gas_price*10, 
+                                                        "nonce": nonce,
+                                                    }
+                                                )
 
         # Sign the transaction
-        sign_userDetails = w3.eth.account.sign_transaction(userDetails, private_key=private_key_str)
+        sign_userDetails = w3.eth.account.sign_transaction(userDetails, ethAccount.privateKey)
+        # sign_userDetails = w3.geth.personal.signTransaction(userDetails, pwd)
 
         # Send the transaction
         send_store_user= w3.eth.send_raw_transaction(sign_userDetails.rawTransaction)
@@ -544,9 +604,59 @@ def Register(request):
         transaction_receipt = w3.eth.wait_for_transaction_receipt(send_store_user)
         print(transaction_receipt)
         print("User Registered on blockchain!!!")
-        ########################################################
 
         return redirect(Login)
+
+        #******************************************************#
+        # ############### Blockchain Interaction #################
+        # file = open(fileName, 'r+')
+        # data = json.loads(file.read())
+
+        # for c in data["Depolyed_Contracts"]:
+        #     if c["contractName"] == userRegContract:
+        #         contract_data = c
+
+        # w3 = Web3(Web3.HTTPProvider('http://127.0.0.1:8545'))
+
+        # nonce = w3.eth.getTransactionCount(contract_data["contractAddress"])
+
+        # address = Web3.toChecksumAddress("0x39CDB6997F5DbD25CA9e8d51c122947313313a77")
+        # password = 'sumedh'
+        # private_key_str = "0xcb32e012bf974efdd4e9c51220d06c43c804646ce869c06f2eb0af5123dcf85f"
+        # regContract = w3.eth.contract(address=contract_data["contractAddress"], abi=contract_data["abi"])
+
+        # nonce = w3.eth.getTransactionCount(address)
+
+        # userId = name[0:5] + phone[-5:]
+        # #check
+        # rec_pwd = regContract.functions.nameToPassword(name).call()
+        # if not len(rec_pwd)  == 0:
+        #     print("User already exisists")
+        #     return render(request, "register.html", {"msg": "Username already taken. Please enter other username."})
+
+        # #
+        # userDetails= regContract.functions.addUser(userId, name, adhaarId, phone, pwd, addresss).buildTransaction(
+        #     {
+        #         "chainId": 9876, 
+        #         "from": address, 
+        #         "gasPrice": w3.eth.gas_price, 
+        #         "nonce": nonce
+        #     }
+        # )
+
+        # # Sign the transaction
+        #sign_userDetails = w3.eth.account.sign_transaction(userDetails,private_key=private_key_str)
+
+        # # Send the transaction
+        # send_store_user= w3.eth.send_raw_transaction(sign_userDetails.rawTransaction)
+        # print("Transaction sent on blockchain!!!")
+
+        # transaction_receipt = w3.eth.wait_for_transaction_receipt(send_store_user)
+        # print(transaction_receipt)
+        # print("User Registered on blockchain!!!")
+        # ########################################################
+
+        # return redirect(Login)
     else:
         print("Get Request for Register  form.")
         return render(request, "register.html", {"auth": False})
