@@ -30,5 +30,6 @@ urlpatterns = [
     path ('<str:stationId>/Policedashboard', views.policeDashboard, name='policeDashboard'),
     path('<str:complaintId>/takeAction', views.TakeAction, name='takeAction'),
     path('SPDashboard', views.SPDashboard, name='spDashboard'),
+    # path('show_file/', views.show_file),
 
 ]

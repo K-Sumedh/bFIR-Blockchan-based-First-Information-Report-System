@@ -38,6 +38,13 @@
                         <b style="font-size:20px;">Complaint Title :</b> <em>{{data.11}}</em>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                         <b style="font-size:20px;">Document Hash :</b> <em>{{data.1}}</em>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br><br>
                         <b style="font-size:20px;">Description:</b> <em>{{data.10}}</em>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        <br><br><br>
+                        <form method="POST">
+                            {% csrf_token %}
+                            <input style="background-color: DodgerBlue;
+                            border: none;color: white;padding: 12px 16px;font-size: 16px;
+                            cursor: pointer; border-radius: 2em;" type="submit" value="View File">
+                         </form>
                         <br><br><br><br><br><br>
                 </div>
                 <div class="status">

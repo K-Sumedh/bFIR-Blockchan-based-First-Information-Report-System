@@ -8,7 +8,7 @@
 
 
 
-<form class="my-form" method="POST">
+<form class="my-form" method="POST" enctype="multipart/form-data">
     {% csrf_token %}
     <div class="container">
       <ul>
@@ -58,13 +58,16 @@
         </li>
         <textarea  name="desc" rows="4" cols="50" placeholder="Complaint Description"></textarea>
 
+        <li>
+          <input id="file" name="file" type="file">  
+        </li>
         <br><br>
 
         <a style="color:red; text-align: center;">{{msg}}</a>
         <li>
           <div class="grid grid-3">
             <div class="required-msg">REQUIRED FIELDS</div>
-            <button class="btn-grid" type="submit" >
+            <button class="btn-grid" type="submit" value="submit">
               <span class="back">
                 <img src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/162656/email-icon.svg" alt="">
               </span>
