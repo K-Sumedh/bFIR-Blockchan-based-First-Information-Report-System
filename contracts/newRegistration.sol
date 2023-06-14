@@ -10,7 +10,6 @@ contract newUserRegistration {
         string phoneNumber;
         string password;
         string addresss;
-        
         string signatureHash;
         address ethAddress;
     }
@@ -18,8 +17,8 @@ contract newUserRegistration {
     User[] public users; //array for list of users
     uint256 public noOfUsers = 0;
 
-    mapping(string => string) public nameToPassword; //used to map name to password, so you can get password using username
-    mapping(string => string) public userIdToPassword;
+    // mapping(string => string) public nameToPassword; //used to map name to password, so you can get password using username
+    // mapping(string => string) public userIdToPassword;
 
     mapping(address => User) public addressToUser;
     mapping(string => address) public uNameToAddress;
@@ -34,9 +33,9 @@ contract newUserRegistration {
                      string memory _hash)
     public
     {
-        users.push(User(_id, _name, _adhaarId,_phoneNumber, _password, _addresss, _hash, msg.sender)); //append to  Contact[] array
-        nameToPassword[_name] = _password; //use name to get phone number
-        userIdToPassword[_id] = _password;
+        // users.push(User(_id, _name, _adhaarId,_phoneNumber, _password, _addresss, _hash, msg.sender)); //append to  Contact[] array
+        // nameToPassword[_name] = _password; //use name to get phone number
+        // userIdToPassword[_id] = _password;
 
         // addressToUser[msg.sender].signatureHash = _hash;
         // addressToUser[msg.sender].ethAddress = msg.sender;
